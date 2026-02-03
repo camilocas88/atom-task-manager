@@ -1,6 +1,6 @@
 mat-dialog-content {
   min-width: 300px;
-  padding: 1rem 0;
+  padding: 1.5rem !important;
 
   p {
     margin: 0;
@@ -10,7 +10,8 @@ mat-dialog-content {
 }
 
 mat-dialog-actions {
-  padding: 1rem 0 0;
+  padding: 1rem 1.5rem !important;
+  margin: 0 !important;
 }
 
 @media (max-width: 600px) {

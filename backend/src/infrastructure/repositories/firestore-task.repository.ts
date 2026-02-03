@@ -4,6 +4,28 @@ import { Task } from '../../domain/entities/task.entity';
 import { ITaskRepository } from '../../domain/repositories/task.repository.interface';
 import { FirebaseConfig } from '../config/firebase.config';
 
+/**
+ * Interface para los datos de Task en Firestore
+ */
+interface FirestoreTaskData {
+  userId: string;
+  title: string;
+  description: string;
+  completed: boolean;
+  createdAt: admin.firestore.Timestamp;
+  updatedAt: admin.firestore.Timestamp;
+}
+
+/**
+ * Interface para datos de actualización de Task
+ */
+interface FirestoreTaskUpdateData {
+  title?: string;
+  description?: string;
+  completed?: boolean;
+  updatedAt: admin.firestore.Timestamp;
+}
+
 @Injectable()
 export class FirestoreTaskRepository implements ITaskRepository {
   private readonly collection = 'tasks';
@@ -12,6 +34,32 @@ export class FirestoreTaskRepository implements ITaskRepository {
 
   private get firestore(): admin.firestore.Firestore {
     return this.firebaseConfig.getFirestore();
+  }
+
+  /**
+   * Convierte datos de Firestore a Task entity
+   */
+  private mapFirestoreDataToTask(
+    id: string,
+    data: admin.firestore.DocumentData,
+  ): Task {
+    const taskData = data as Partial<FirestoreTaskData>;
+
+    return new Task({
+      id,
+      userId: taskData.userId ?? '',
+      title: taskData.title ?? '',
+      description: taskData.description ?? '',
+      completed: taskData.completed ?? false,
+      createdAt:
+        taskData.createdAt instanceof admin.firestore.Timestamp
+          ? taskData.createdAt.toDate()
+          : new Date(),
+      updatedAt:
+        taskData.updatedAt instanceof admin.firestore.Timestamp
+          ? taskData.updatedAt.toDate()
+          : new Date(),
+    });
   }
 
   async findAllByUserId(userId: string): Promise<Task[]> {
@@ -26,20 +74,13 @@ export class FirestoreTaskRepository implements ITaskRepository {
         return [];
       }
 
-      return snapshot.docs.map((doc) => {
-        const data = doc.data();
-        return new Task({
-          id: doc.id,
-          userId: data.userId,
-          title: data.title,
-          description: data.description || '',
-          completed: data.completed || false,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
-        });
-      });
+      return snapshot.docs.map((doc) =>
+        this.mapFirestoreDataToTask(doc.id, doc.data()),
+      );
     } catch (error) {
-      throw new Error(`Error finding tasks by user id: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Error finding tasks by user id: ${errorMessage}`);
     }
   }
 
@@ -50,27 +91,15 @@ export class FirestoreTaskRepository implements ITaskRepository {
         .doc(id)
         .get();
 
-      if (!doc.exists) {
+      if (!doc.exists || !doc.data()) {
         return null;
       }
 
-      const data = doc.data();
-
-      if (!data) {
-        return null;
-      }
-
-      return new Task({
-        id: doc.id,
-        userId: data.userId,
-        title: data.title,
-        description: data.description || '',
-        completed: data.completed || false,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-      });
+      return this.mapFirestoreDataToTask(doc.id, doc.data()!);
     } catch (error) {
-      throw new Error(`Error finding task by id: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Error finding task by id: ${errorMessage}`);
     }
   }
 
@@ -79,11 +108,11 @@ export class FirestoreTaskRepository implements ITaskRepository {
       const taskRef = this.firestore.collection(this.collection).doc();
       const now = new Date();
 
-      const taskData = {
-        userId: task.userId,
-        title: task.title,
-        description: task.description || '',
-        completed: task.completed || false,
+      const taskData: FirestoreTaskData = {
+        userId: task.userId ?? '',
+        title: task.title ?? '',
+        description: task.description ?? '',
+        completed: task.completed ?? false,
         createdAt: admin.firestore.Timestamp.fromDate(now),
         updatedAt: admin.firestore.Timestamp.fromDate(now),
       };
@@ -92,15 +121,17 @@ export class FirestoreTaskRepository implements ITaskRepository {
 
       return new Task({
         id: taskRef.id,
-        userId: task.userId,
-        title: task.title,
-        description: task.description || '',
-        completed: task.completed || false,
+        userId: taskData.userId,
+        title: taskData.title,
+        description: taskData.description,
+        completed: taskData.completed,
         createdAt: now,
         updatedAt: now,
       });
     } catch (error) {
-      throw new Error(`Error creating task: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Error creating task: ${errorMessage}`);
     }
   }
 
@@ -114,7 +145,7 @@ export class FirestoreTaskRepository implements ITaskRepository {
       }
 
       const now = new Date();
-      const updateData: any = {
+      const updateData: FirestoreTaskUpdateData = {
         updatedAt: admin.firestore.Timestamp.fromDate(now),
       };
 
@@ -134,17 +165,11 @@ export class FirestoreTaskRepository implements ITaskRepository {
         throw new Error(`Task data not found after update`);
       }
 
-      return new Task({
-        id: updatedDoc.id,
-        userId: data.userId,
-        title: data.title,
-        description: data.description || '',
-        completed: data.completed || false,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: now,
-      });
+      return this.mapFirestoreDataToTask(updatedDoc.id, data);
     } catch (error) {
-      throw new Error(`Error updating task: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Error updating task: ${errorMessage}`);
     }
   }
 
@@ -164,7 +189,9 @@ export class FirestoreTaskRepository implements ITaskRepository {
 
       await taskRef.delete();
     } catch (error) {
-      throw new Error(`Error deleting task: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Error deleting task: ${errorMessage}`);
     }
   }
 }

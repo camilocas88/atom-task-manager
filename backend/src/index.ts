@@ -1,4 +1,3 @@
-
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
@@ -47,8 +46,24 @@ const createNestServer = async (expressInstance: express.Application) => {
   );
 
   // CORS para producción
+  const allowedOrigins = [
+    'http://localhost:4200',
+    'https://atom-343c0.web.app',
+    'https://atom-343c0.firebaseapp.com',
+  ];
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || true,
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      // Permitir requests sin origin (como Postman) o desde orígenes permitidos
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id'],
@@ -57,7 +72,9 @@ const createNestServer = async (expressInstance: express.Application) => {
   await app.init();
 
   logger.log('🚀 NestJS app initialized for Firebase Functions');
-  logger.log(`📡 CORS enabled for: ${process.env.FRONTEND_URL || 'all origins'}`);
+  logger.log(
+    `📡 CORS enabled for: ${process.env.FRONTEND_URL || 'all origins'}`,
+  );
 
   return app;
 };
@@ -69,7 +86,7 @@ createNestServer(server)
 
 /**
  * Export como Firebase Function
- * 
+ *
  * URL de producción: https://us-central1-atom-343c0.cloudfunctions.net/api
  */
 export const api = functions.https.onRequest(server);

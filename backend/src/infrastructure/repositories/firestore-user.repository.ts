@@ -4,6 +4,14 @@ import { User } from '../../domain/entities/user.entity';
 import { IUserRepository } from '../../domain/repositories/user.repository.interface';
 import { FirebaseConfig } from '../config/firebase.config';
 
+/**
+ * Interface para los datos de User en Firestore
+ */
+interface FirestoreUserData {
+  email: string;
+  createdAt: admin.firestore.Timestamp;
+}
+
 @Injectable()
 export class FirestoreUserRepository implements IUserRepository {
   private readonly collection = 'users';
@@ -12,6 +20,25 @@ export class FirestoreUserRepository implements IUserRepository {
 
   private get firestore(): admin.firestore.Firestore {
     return this.firebaseConfig.getFirestore();
+  }
+
+  /**
+   * Convierte datos de Firestore a User entity
+   */
+  private mapFirestoreDataToUser(
+    id: string,
+    data: admin.firestore.DocumentData,
+  ): User {
+    const userData = data as Partial<FirestoreUserData>;
+
+    return new User({
+      id,
+      email: userData.email ?? '',
+      createdAt:
+        userData.createdAt instanceof admin.firestore.Timestamp
+          ? userData.createdAt.toDate()
+          : new Date(),
+    });
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -27,15 +54,11 @@ export class FirestoreUserRepository implements IUserRepository {
       }
 
       const doc = snapshot.docs[0];
-      const data = doc.data();
-
-      return new User({
-        id: doc.id,
-        email: data.email,
-        createdAt: data.createdAt?.toDate() || new Date(),
-      });
+      return this.mapFirestoreDataToUser(doc.id, doc.data());
     } catch (error) {
-      throw new Error(`Error finding user by email: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Error finding user by email: ${errorMessage}`);
     }
   }
 
@@ -46,23 +69,15 @@ export class FirestoreUserRepository implements IUserRepository {
         .doc(id)
         .get();
 
-      if (!doc.exists) {
+      if (!doc.exists || !doc.data()) {
         return null;
       }
 
-      const data = doc.data();
-
-      if (!data) {
-        return null;
-      }
-
-      return new User({
-        id: doc.id,
-        email: data.email,
-        createdAt: data.createdAt?.toDate() || new Date(),
-      });
+      return this.mapFirestoreDataToUser(doc.id, doc.data()!);
     } catch (error) {
-      throw new Error(`Error finding user by id: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Error finding user by id: ${errorMessage}`);
     }
   }
 
@@ -71,7 +86,7 @@ export class FirestoreUserRepository implements IUserRepository {
       const userRef = this.firestore.collection(this.collection).doc();
       const createdAt = new Date();
 
-      const userData = {
+      const userData: FirestoreUserData = {
         email,
         createdAt: admin.firestore.Timestamp.fromDate(createdAt),
       };
@@ -84,7 +99,9 @@ export class FirestoreUserRepository implements IUserRepository {
         createdAt,
       });
     } catch (error) {
-      throw new Error(`Error creating user: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Error creating user: ${errorMessage}`);
     }
   }
 }

@@ -1,12 +1,10 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
-
 interface AuthenticatedUser {
   id: string;
   email: string;
   [key: string]: unknown;
 }
-
 
 export const GetUser = createParamDecorator(
   (data: string | undefined, ctx: ExecutionContext) => {
