@@ -1,0 +1,65 @@
+<mat-card class="task-form-card">
+  <mat-card-header>
+    <mat-card-title>
+      <mat-icon>{{ isEditMode ? 'edit' : 'add_task' }}</mat-icon>
+      {{ isEditMode ? 'Editar Tarea' : 'Nueva Tarea' }}
+    </mat-card-title>
+  </mat-card-header>
+
+  <mat-card-content>
+    <form [formGroup]="taskForm" (ngSubmit)="onSubmit()">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Título</mat-label>
+        <input
+          matInput
+          formControlName="title"
+          placeholder="Ingresa el título de la tarea"
+          maxlength="100"
+        />
+        <mat-hint align="end">{{ titleControl?.value?.length || 0 }}/100</mat-hint>
+        <mat-error *ngIf="titleControl?.hasError('required')">
+          El título es requerido
+        </mat-error>
+        <mat-error *ngIf="titleControl?.hasError('maxlength')">
+          El título no puede exceder 100 caracteres
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Descripción</mat-label>
+        <textarea
+          matInput
+          formControlName="description"
+          placeholder="Ingresa una descripción opcional"
+          rows="4"
+          maxlength="500"
+        ></textarea>
+        <mat-hint align="end">{{ descriptionControl?.value?.length || 0 }}/500</mat-hint>
+        <mat-error *ngIf="descriptionControl?.hasError('maxlength')">
+          La descripción no puede exceder 500 caracteres
+        </mat-error>
+      </mat-form-field>
+
+      <div class="form-actions">
+        <button
+          mat-raised-button
+          color="primary"
+          type="submit"
+          [disabled]="taskForm.invalid"
+        >
+          <mat-icon>{{ isEditMode ? 'save' : 'add' }}</mat-icon>
+          {{ isEditMode ? 'Guardar' : 'Crear Tarea' }}
+        </button>
+        
+        <button
+          mat-button
+          type="button"
+          (click)="onCancel()"
+          *ngIf="isEditMode"
+        >
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </mat-card-content>
+</mat-card>

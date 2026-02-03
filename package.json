@@ -1,0 +1,32 @@
+{
+  "name": "atom-task-management",
+  "version": "1.0.0",
+  "description": "Full-stack task management application with Angular and NestJS",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "dev:backend": "cd backend && npm run start:dev",
+    "dev:frontend": "cd frontend && npm start",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "build:all": "npm run build:backend && npm run build:frontend",
+    "deploy:backend": "cd backend && npm run deploy",
+    "deploy:frontend": "cd frontend && npm run deploy",
+    "deploy:all": "npm run build:all && npm run deploy:backend && npm run deploy:frontend",
+    "serve:backend": "cd backend && npm run serve",
+    "lint:backend": "cd backend && npm run lint",
+    "lint:frontend": "cd frontend && npm run ng lint",
+    "format:backend": "cd backend && npm run format",
+    "clean": "rm -rf node_modules backend/node_modules frontend/node_modules backend/dist frontend/dist",
+    "setup:env": "cd backend && npm run setup:env"
+  },
+  "keywords": [
+    "angular",
+    "nestjs",
+    "firebase",
+    "firestore",
+    "task-management"
+  ],
+  "author": "",
+  "license": "MIT"
+}

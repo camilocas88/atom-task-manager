@@ -1,0 +1,157 @@
+name: Deploy to Firebase
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test-backend:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+      
+      - name: Lint code
+        working-directory: backend
+        run: npm run lint
+      
+      # Note: Tests are skipped as per user request (no unit tests)
+      # Uncomment when tests are added:
+      # - name: Run tests
+      #   working-directory: backend
+      #   run: npm test
+      
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
+
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+      
+      # Note: Tests are skipped as per user request (no unit tests)
+      # Uncomment when tests are added:
+      # - name: Run tests
+      #   working-directory: frontend
+      #   run: npm test -- --watch=false --browsers=ChromeHeadless
+      
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+  deploy-backend:
+    name: Deploy Backend to Firebase Functions
+    needs: [test-backend]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+      
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
+      
+      - name: Create .env file
+        working-directory: backend
+        run: |
+          echo "FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> .env
+          echo "FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}" >> .env
+          echo "FIREBASE_PRIVATE_KEY=${{ secrets.FIREBASE_PRIVATE_KEY }}" >> .env
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+          echo "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" >> .env
+          echo "NODE_ENV=production" >> .env
+      
+      - name: Deploy to Firebase Functions
+        working-directory: backend
+        run: |
+          npm install -g firebase-tools
+          firebase deploy --only functions --token "${{ secrets.FIREBASE_TOKEN }}" --project atom-343c0
+
+  deploy-frontend:
+    name: Deploy Frontend to Firebase Hosting
+    needs: [test-frontend]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+      
+      - name: Build frontend (production)
+        working-directory: frontend
+        run: npm run build -- --configuration production
+        env:
+          API_URL: https://us-central1-atom-343c0.cloudfunctions.net/api
+      
+      - name: Deploy to Firebase Hosting
+        working-directory: frontend
+        run: |
+          npm install -g firebase-tools
+          firebase deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}" --project atom-343c0
+
+  notify-success:
+    name: Notify Deployment Success
+    needs: [deploy-backend, deploy-frontend]
+    runs-on: ubuntu-latest
+    if: success()
+    
+    steps:
+      - name: Success notification
+        run: |
+          echo "✅ Deployment successful!"
+          echo "Backend: Firebase Functions"
+          echo "Frontend: Firebase Hosting"

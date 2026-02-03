@@ -1,0 +1,46 @@
+<mat-card class="task-item" [class.completed]="task.completed">
+  <mat-card-content>
+    <div class="task-main">
+      <mat-checkbox
+        [checked]="task.completed"
+        (change)="onToggleComplete()"
+        color="primary"
+        class="task-checkbox"
+      >
+      </mat-checkbox>
+      
+      <div class="task-info">
+        <h3 class="task-title" [class.completed-text]="task.completed">
+          {{ task.title }}
+        </h3>
+        <p class="task-description" *ngIf="task.description" [class.completed-text]="task.completed">
+          {{ task.description }}
+        </p>
+        <span class="task-date">
+          Creada: {{ task.createdAt | date:'short' }}
+        </span>
+      </div>
+    </div>
+
+    <div class="task-actions">
+      <button
+        mat-icon-button
+        (click)="onEdit()"
+        matTooltip="Editar"
+        color="primary"
+        [disabled]="task.completed"
+      >
+        <mat-icon>edit</mat-icon>
+      </button>
+      
+      <button
+        mat-icon-button
+        (click)="onDelete()"
+        matTooltip="Eliminar"
+        color="warn"
+      >
+        <mat-icon>delete</mat-icon>
+      </button>
+    </div>
+  </mat-card-content>
+</mat-card>

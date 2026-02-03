@@ -1,0 +1,20 @@
+mat-dialog-content {
+  min-width: 300px;
+  padding: 1rem 0;
+
+  p {
+    margin: 0;
+    line-height: 1.6;
+    color: #666;
+  }
+}
+
+mat-dialog-actions {
+  padding: 1rem 0 0;
+}
+
+@media (max-width: 600px) {
+  mat-dialog-content {
+    min-width: auto;
+  }
+}

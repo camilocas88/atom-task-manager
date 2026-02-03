@@ -1,0 +1,52 @@
+<div class="tasks-page">
+  <mat-toolbar color="primary" class="app-toolbar">
+    <div class="toolbar-content">
+      <div class="toolbar-left">
+        <mat-icon class="toolbar-icon">task_alt</mat-icon>
+        <span class="app-title">Gestión de Tareas</span>
+      </div>
+
+      <div class="toolbar-right">
+        <div class="user-info" *ngIf="currentUser">
+          <span class="user-email" [class.mobile]="(isHandset$ | async)">
+            {{ currentUser.email }}
+          </span>
+          <button mat-icon-button (click)="onLogout()" matTooltip="Cerrar sesión">
+            <mat-icon>logout</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+  </mat-toolbar>
+
+  <div class="page-container" [class.mobile]="(isHandset$ | async)">
+    <div class="stats-bar">
+      <div class="stat-item">
+        <mat-icon>list</mat-icon>
+        <span>Total: <strong>{{ tasksCount.total }}</strong></span>
+      </div>
+      <div class="stat-item pending">
+        <mat-icon>pending_actions</mat-icon>
+        <span>Pendientes: <strong>{{ tasksCount.pending }}</strong></span>
+      </div>
+      <div class="stat-item completed">
+        <mat-icon>check_circle</mat-icon>
+        <span>Completadas: <strong>{{ tasksCount.completed }}</strong></span>
+      </div>
+    </div>
+
+    <div class="content-wrapper">
+      <app-task-form
+        (submitTask)="onCreateTask($event)"
+      ></app-task-form>
+
+      <app-task-list
+        [tasks]="(tasks$ | async) || []"
+        [loading]="(loading$ | async) || false"
+        (toggleComplete)="onToggleComplete($event)"
+        (editTask)="onEditTask($event)"
+        (deleteTask)="onDeleteTask($event)"
+      ></app-task-list>
+    </div>
+  </div>
+</div>

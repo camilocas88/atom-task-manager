@@ -1,0 +1,20 @@
+<div class="task-list-container">
+  <div *ngIf="loading" class="loading-container">
+    <p>Cargando tareas...</p>
+  </div>
+
+  <div *ngIf="!loading && tasks.length === 0" class="empty-state">
+    <p class="empty-message">No hay tareas aún</p>
+    <p class="empty-hint">¡Crea tu primera tarea usando el formulario de arriba!</p>
+  </div>
+
+  <div *ngIf="!loading && tasks.length > 0" class="tasks-grid">
+    <app-task-item
+      *ngFor="let task of tasks; trackBy: trackByTaskId"
+      [task]="task"
+      (toggleComplete)="onToggleComplete($event)"
+      (edit)="onEdit($event)"
+      (delete)="onDelete($event)"
+    ></app-task-item>
+  </div>
+</div>

@@ -1,0 +1,106 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  lint-and-build-backend:
+    name: Backend - Lint & Build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+      
+      - name: Run linter
+        working-directory: backend
+        run: npm run lint
+      
+      - name: Build
+        working-directory: backend
+        run: npm run build
+      
+      - name: Check for build artifacts
+        working-directory: backend
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "Build failed - dist directory not found"
+            exit 1
+          fi
+          echo "✅ Build artifacts found"
+
+  lint-and-build-frontend:
+    name: Frontend - Lint & Build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+      
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+      
+      - name: Check for build artifacts
+        working-directory: frontend
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "Build failed - dist directory not found"
+            exit 1
+          fi
+          echo "✅ Build artifacts found"
+
+  check-code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Check for TODO/FIXME comments
+        run: |
+          echo "Checking for TODO/FIXME comments..."
+          git grep -n "TODO\|FIXME" || echo "No TODO/FIXME found"
+      
+      - name: Check file sizes
+        run: |
+          echo "Checking for large files..."
+          find . -type f -size +1M -not -path "*/node_modules/*" -not -path "*/.git/*" || echo "No large files found"
+
+  summary:
+    name: CI Summary
+    needs: [lint-and-build-backend, lint-and-build-frontend, check-code-quality]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Check all jobs status
+        run: |
+          echo "CI Pipeline completed"
+          echo "Backend: ${{ needs.lint-and-build-backend.result }}"
+          echo "Frontend: ${{ needs.lint-and-build-frontend.result }}"
+          echo "Code Quality: ${{ needs.check-code-quality.result }}"

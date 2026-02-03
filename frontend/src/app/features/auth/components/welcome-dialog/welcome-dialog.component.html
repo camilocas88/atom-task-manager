@@ -1,0 +1,36 @@
+<div class="welcome-dialog">
+  <div class="dialog-icon">
+    <mat-icon>celebration</mat-icon>
+  </div>
+  
+  <h2 mat-dialog-title>¡Bienvenido a Gestión de Tareas!</h2>
+  
+  <mat-dialog-content>
+    <p class="welcome-message">
+      Hola <strong>{{ data.user.email }}</strong>,
+    </p>
+    <p>
+      Tu cuenta ha sido creada exitosamente. Ahora puedes comenzar a gestionar tus tareas de manera eficiente.
+    </p>
+    <div class="features">
+      <div class="feature-item">
+        <mat-icon>check_circle</mat-icon>
+        <span>Crea y organiza tareas</span>
+      </div>
+      <div class="feature-item">
+        <mat-icon>edit</mat-icon>
+        <span>Actualiza el estado</span>
+      </div>
+      <div class="feature-item">
+        <mat-icon>delete</mat-icon>
+        <span>Elimina tareas completadas</span>
+      </div>
+    </div>
+  </mat-dialog-content>
+  
+  <mat-dialog-actions align="end">
+    <button mat-raised-button color="primary" (click)="onClose()">
+      Comenzar
+    </button>
+  </mat-dialog-actions>
+</div>

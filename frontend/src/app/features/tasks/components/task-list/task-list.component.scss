@@ -1,0 +1,35 @@
+.task-list-container {
+  width: 100%;
+
+  .loading-container {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    background: #f9f9f9;
+    border-radius: 8px;
+    margin: 1rem 0;
+
+    .empty-message {
+      font-size: 1.25rem;
+      color: #999;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .empty-hint {
+      font-size: 0.95rem;
+      color: #bbb;
+      margin: 0;
+    }
+  }
+
+  .tasks-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+}

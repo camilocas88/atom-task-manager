@@ -1,0 +1,65 @@
+.task-form-card {
+  margin-bottom: 1.5rem;
+  
+  mat-card-header {
+    margin-bottom: 1rem;
+    
+    mat-card-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.25rem;
+      font-weight: 500;
+      
+      mat-icon {
+        color: #667eea;
+      }
+    }
+  }
+  
+  mat-card-content {
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      
+      .full-width {
+        width: 100%;
+      }
+      
+      .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 0.5rem;
+        
+        button {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .task-form-card {
+    mat-card-header {
+      mat-card-title {
+        font-size: 1.1rem;
+      }
+    }
+    
+    mat-card-content {
+      form {
+        .form-actions {
+          flex-direction: column;
+          
+          button {
+            width: 100%;
+          }
+        }
+      }
+    }
+  }
+}
