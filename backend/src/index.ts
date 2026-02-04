@@ -26,8 +26,6 @@ const createNestServer = async (expressInstance: express.Application) => {
 
   const logger = new Logger('Firebase');
 
-  app.setGlobalPrefix('api');
-
   // Validación global
   app.useGlobalPipes(
     new ValidationPipe({
