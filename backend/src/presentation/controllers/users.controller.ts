@@ -3,7 +3,7 @@ import { LoginDto } from '../../application/dtos/login.dto';
 import { LoginResult, LoginUseCase } from '../../application/use-cases/users';
 import { Public } from '../../shared/decorators/public.decorator';
 
-@Controller('api/users')
+@Controller('users')
 export class UsersController {
   constructor(private readonly loginUseCase: LoginUseCase) {}
 

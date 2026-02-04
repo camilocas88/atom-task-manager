@@ -21,7 +21,7 @@ import {
 import { Task } from '../../domain/entities/task.entity';
 import { GetUser } from '../../shared/decorators/get-user.decorator';
 
-@Controller('api/tasks')
+@Controller('tasks')
 export class TasksController {
   constructor(
     private readonly createTaskUseCase: CreateTaskUseCase,
