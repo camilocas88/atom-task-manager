@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { INestApplication } from '@nestjs/common';
 import express from 'express';
+import cors from 'cors';
 import * as functions from 'firebase-functions';
 import { AppModule } from './app.module';
 import {
@@ -13,6 +14,25 @@ import {
 
 const logger = new Logger('Bootstrap');
 const server = express();
+
+// Configurar CORS en Express ANTES de NestJS
+const allowedOrigins = [
+  'http://localhost:4200',
+  'https://atom-343c0.web.app',
+  'https://atom-343c0.firebaseapp.com',
+];
+
+server.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  }),
+);
+
 let cachedApp: INestApplication | null = null;
 
 /**
@@ -49,22 +69,6 @@ async function createNestApp(): Promise<INestApplication> {
     new LoggingInterceptor(),
     new TransformInterceptor(),
   );
-
-  // CORS para producción
-  const allowedOrigins = [
-    'http://localhost:4200',
-    'https://atom-343c0.web.app',
-    'https://atom-343c0.firebaseapp.com',
-  ];
-
-  app.enableCors({
-    origin: allowedOrigins,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id'],
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
-  });
 
   // Inicializar la aplicación
   await app.init();
