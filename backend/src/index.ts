@@ -10,81 +10,87 @@ import {
   TransformInterceptor,
 } from './shared';
 
-const server = express();
 const logger = new Logger('Bootstrap');
+const expressApp = express();
+let isAppInitialized = false;
 
 /**
  * Crea y configura la aplicación NestJS
  */
-const createNestServer = async (expressInstance: express.Application) => {
-  const app = await NestFactory.create(
-    AppModule,
-    new ExpressAdapter(expressInstance),
-    {
-      logger: ['error', 'warn', 'log'],
-    },
-  );
+async function bootstrap(): Promise<void> {
+  if (isAppInitialized) {
+    return;
+  }
 
-  // Validación global
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: {
-        enableImplicitConversion: true,
+  try {
+    const app = await NestFactory.create(
+      AppModule,
+      new ExpressAdapter(expressApp),
+      {
+        logger: ['error', 'warn', 'log'],
       },
-    }),
-  );
+    );
 
-  // Filtros e interceptores
-  app.useGlobalFilters(new HttpExceptionFilter());
-  app.useGlobalInterceptors(
-    new LoggingInterceptor(),
-    new TransformInterceptor(),
-  );
+    // Validación global
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+        transformOptions: {
+          enableImplicitConversion: true,
+        },
+      }),
+    );
 
-  // CORS para producción
-  const allowedOrigins = [
-    'http://localhost:4200',
-    'https://atom-343c0.web.app',
-    'https://atom-343c0.firebaseapp.com',
-  ];
+    // Filtros e interceptores
+    app.useGlobalFilters(new HttpExceptionFilter());
+    app.useGlobalInterceptors(
+      new LoggingInterceptor(),
+      new TransformInterceptor(),
+    );
 
-  app.enableCors({
-    origin: (
-      origin: string | undefined,
-      callback: (err: Error | null, allow?: boolean) => void,
-    ) => {
-      // Permitir requests sin origin (como Postman) o desde orígenes permitidos
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id'],
-  });
+    // CORS para producción
+    const allowedOrigins = [
+      'http://localhost:4200',
+      'https://atom-343c0.web.app',
+      'https://atom-343c0.firebaseapp.com',
+    ];
 
-  // Inicializar la aplicación
-  await app.init();
+    app.enableCors({
+      origin: (
+        origin: string | undefined,
+        callback: (err: Error | null, allow?: boolean) => void,
+      ) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id'],
+    });
 
-  logger.log('🚀 NestJS app initialized');
-  logger.log(`📡 CORS enabled for: ${allowedOrigins.join(', ')}`);
+    // Inicializar la aplicación
+    await app.init();
 
-  return app;
-};
-
-// Inicializar NestJS al arranque
-createNestServer(server)
-  .then(() => logger.log('✅ NestJS ready for Firebase Functions'))
-  .catch((err) => logger.error('❌ NestJS initialization failed', err));
+    isAppInitialized = true;
+    logger.log('🚀 NestJS app initialized successfully');
+    logger.log(`📡 CORS enabled for: ${allowedOrigins.join(', ')}`);
+  } catch (error) {
+    logger.error('❌ Failed to initialize NestJS app', error);
+    throw error;
+  }
+}
 
 /**
  * Export como Firebase Function
  *
  * URL de producción: https://us-central1-atom-343c0.cloudfunctions.net/api
  */
-export const api = functions.https.onRequest(server);
+export const api = functions.https.onRequest(async (req, res) => {
+  await bootstrap();
+  expressApp(req, res);
+});
