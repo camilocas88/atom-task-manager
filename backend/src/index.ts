@@ -1,6 +1,7 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { INestApplication } from '@nestjs/common';
+import { ExpressAdapter } from '@nestjs/platform-express';
+import express from 'express';
 import * as functions from 'firebase-functions';
 import { AppModule } from './app.module';
 import {
@@ -17,14 +18,16 @@ const allowedOrigins = [
   'https://atom-343c0.firebaseapp.com',
 ];
 
-let cachedApp: INestApplication | null = null;
+const expressApp = express();
+let isBootstrapped = false;
 
-async function bootstrap(): Promise<INestApplication> {
-  if (cachedApp) {
-    return cachedApp;
+async function bootstrap(): Promise<void> {
+  if (isBootstrapped) {
+    return;
   }
 
-  const app = await NestFactory.create(AppModule, {
+  const adapter = new ExpressAdapter(expressApp);
+  const app = await NestFactory.create(AppModule, adapter, {
     logger: ['error', 'warn', 'log'],
   });
 
@@ -52,24 +55,13 @@ async function bootstrap(): Promise<INestApplication> {
     allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id'],
   });
 
-  cachedApp = app;
+  // NO llamar app.init() - Se inicializa automáticamente en el primer request
+  isBootstrapped = true;
   logger.log('🚀 NestJS app ready');
   logger.log(`📡 CORS enabled for: ${allowedOrigins.join(', ')}`);
-
-  return app;
 }
 
 export const api = functions.https.onRequest(async (req, res) => {
-  try {
-    const app = await bootstrap();
-    const expressApp = app.getHttpAdapter().getInstance();
-    expressApp(req, res);
-  } catch (error) {
-    logger.error('Error handling request:', error);
-    res.status(500).json({
-      statusCode: 500,
-      message: 'Internal server error',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-  }
+  await bootstrap();
+  expressApp(req, res);
 });
