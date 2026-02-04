@@ -98,9 +98,9 @@ jobs:
         working-directory: backend
         run: |
           cat > .env << 'EOF'
-          FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
-          FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}
-          FIREBASE_PRIVATE_KEY="${{ secrets.FIREBASE_PRIVATE_KEY }}"
+          PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
+          CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          PRIVATE_KEY="${{ secrets.FIREBASE_PRIVATE_KEY }}"
           JWT_SECRET=${{ secrets.JWT_SECRET }}
           FRONTEND_URL=${{ secrets.FRONTEND_URL }}
           NODE_ENV=production
