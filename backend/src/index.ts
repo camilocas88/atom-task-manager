@@ -70,9 +70,6 @@ async function createNestApp(): Promise<INestApplication> {
     new TransformInterceptor(),
   );
 
-  // Inicializar la aplicación
-  await app.init();
-
   cachedApp = app;
   logger.log('🚀 NestJS app initialized');
   logger.log(`📡 CORS enabled for: ${allowedOrigins.join(', ')}`);
