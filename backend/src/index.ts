@@ -1,7 +1,7 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { INestApplication } from '@nestjs/common';
 import * as functions from 'firebase-functions';
+import { Server } from 'http';
 import { AppModule } from './app.module';
 import {
   HttpExceptionFilter,
@@ -17,9 +17,9 @@ const allowedOrigins = [
   'https://atom-343c0.firebaseapp.com',
 ];
 
-let cachedServer: any = null;
+let cachedServer: Server | null = null;
 
-async function bootstrap(): Promise<any> {
+async function bootstrap(): Promise<Server> {
   if (cachedServer) {
     return cachedServer;
   }
@@ -56,7 +56,7 @@ async function bootstrap(): Promise<any> {
   await app.init();
   
   // Obtener el servidor HTTP subyacente
-  cachedServer = app.getHttpServer();
+  cachedServer = app.getHttpServer() as Server;
   
   logger.log('🚀 NestJS app ready');
   logger.log(`📡 CORS enabled for: ${allowedOrigins.join(', ')}`);
