@@ -1,9 +1,7 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import { INestApplication } from '@nestjs/common';
 import express from 'express';
-import cors from 'cors';
 import * as functions from 'firebase-functions';
 import { AppModule } from './app.module';
 import {
@@ -13,39 +11,29 @@ import {
 } from './shared';
 
 const logger = new Logger('Bootstrap');
-const server = express();
 
-// Configurar CORS en Express ANTES de NestJS
+// Configuración CORS
 const allowedOrigins = [
   'http://localhost:4200',
   'https://atom-343c0.web.app',
   'https://atom-343c0.firebaseapp.com',
 ];
 
-server.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id'],
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
-  }),
-);
-
-let cachedApp: INestApplication | null = null;
+let cachedServer: express.Express | null = null;
 
 /**
  * Crea y configura la aplicación NestJS
  */
-async function createNestApp(): Promise<INestApplication> {
-  if (cachedApp) {
-    return cachedApp;
+async function createServer(): Promise<express.Express> {
+  if (cachedServer) {
+    return cachedServer;
   }
 
+  const expressApp = express();
+  
   const app = await NestFactory.create(
     AppModule,
-    new ExpressAdapter(server),
+    new ExpressAdapter(expressApp),
     {
       logger: ['error', 'warn', 'log'],
     },
@@ -70,11 +58,22 @@ async function createNestApp(): Promise<INestApplication> {
     new TransformInterceptor(),
   );
 
-  cachedApp = app;
+  // CORS
+  app.enableCors({
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id'],
+  });
+
+  // IMPORTANTE: Inicializar explícitamente para registrar rutas
+  await app.init();
+
+  cachedServer = expressApp;
   logger.log('🚀 NestJS app initialized');
   logger.log(`📡 CORS enabled for: ${allowedOrigins.join(', ')}`);
 
-  return app;
+  return expressApp;
 }
 
 /**
@@ -84,7 +83,7 @@ async function createNestApp(): Promise<INestApplication> {
  */
 export const api = functions.https.onRequest(async (req, res) => {
   try {
-    await createNestApp();
+    const server = await createServer();
     server(req, res);
   } catch (error) {
     logger.error('Error handling request:', error);
