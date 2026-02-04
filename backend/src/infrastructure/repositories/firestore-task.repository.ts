@@ -17,14 +17,15 @@ interface FirestoreTaskData {
 }
 
 /**
- * Interface para datos de actualización de Task
+ * Type para datos de actualización de Task en Firestore
  */
-interface FirestoreTaskUpdateData {
+type FirestoreTaskUpdateData = {
+  [key: string]: string | boolean | admin.firestore.Timestamp | undefined;
   title?: string;
   description?: string;
   completed?: boolean;
   updatedAt: admin.firestore.Timestamp;
-}
+};
 
 @Injectable()
 export class FirestoreTaskRepository implements ITaskRepository {
