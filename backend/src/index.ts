@@ -1,6 +1,6 @@
-import { ExpressAdapter } from '@nestjs/platform-express';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { ExpressAdapter } from '@nestjs/platform-express';
 import express from 'express';
 import * as functions from 'firebase-functions';
 import { AppModule } from './app.module';
@@ -25,6 +25,8 @@ const createNestServer = async (expressInstance: express.Application) => {
   );
 
   const logger = new Logger('Firebase');
+
+  app.setGlobalPrefix('api');
 
   // Validación global
   app.useGlobalPipes(
