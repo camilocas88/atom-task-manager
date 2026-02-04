@@ -11,6 +11,7 @@ import {
 } from './shared';
 
 const server = express();
+const logger = new Logger('Bootstrap');
 
 /**
  * Crea y configura la aplicación NestJS
@@ -23,8 +24,6 @@ const createNestServer = async (expressInstance: express.Application) => {
       logger: ['error', 'warn', 'log'],
     },
   );
-
-  const logger = new Logger('Firebase');
 
   // Validación global
   app.useGlobalPipes(
@@ -69,18 +68,19 @@ const createNestServer = async (expressInstance: express.Application) => {
     allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id'],
   });
 
-  logger.log('🚀 NestJS app configured for Firebase Functions');
-  logger.log(
-    `📡 CORS enabled for: ${process.env.FRONTEND_URL || 'all origins'}`,
-  );
+  // Inicializar la aplicación
+  await app.init();
+
+  logger.log('🚀 NestJS app initialized');
+  logger.log(`📡 CORS enabled for: ${allowedOrigins.join(', ')}`);
 
   return app;
 };
 
-// Inicializar la app (sin llamar a init() para evitar error de app.router deprecated)
+// Inicializar NestJS al arranque
 createNestServer(server)
-  .then(() => console.log('✅ Nest Ready for Firebase Functions'))
-  .catch((err) => console.error('❌ Nest initialization error', err));
+  .then(() => logger.log('✅ NestJS ready for Firebase Functions'))
+  .catch((err) => logger.error('❌ NestJS initialization failed', err));
 
 /**
  * Export como Firebase Function
