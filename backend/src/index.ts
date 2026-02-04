@@ -1,6 +1,7 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
+import { INestApplication } from '@nestjs/common';
 import express from 'express';
 import * as functions from 'firebase-functions';
 import { AppModule } from './app.module';
@@ -11,78 +12,68 @@ import {
 } from './shared';
 
 const logger = new Logger('Bootstrap');
-const expressApp = express();
-let isAppInitialized = false;
+const server = express();
+let cachedApp: INestApplication | null = null;
 
 /**
  * Crea y configura la aplicación NestJS
  */
-async function bootstrap(): Promise<void> {
-  if (isAppInitialized) {
-    return;
+async function createNestApp(): Promise<INestApplication> {
+  if (cachedApp) {
+    return cachedApp;
   }
 
-  try {
-    const app = await NestFactory.create(
-      AppModule,
-      new ExpressAdapter(expressApp),
-      {
-        logger: ['error', 'warn', 'log'],
+  const app = await NestFactory.create(
+    AppModule,
+    new ExpressAdapter(server),
+    {
+      logger: ['error', 'warn', 'log'],
+    },
+  );
+
+  // Validación global
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
       },
-    );
+    }),
+  );
 
-    // Validación global
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-        transformOptions: {
-          enableImplicitConversion: true,
-        },
-      }),
-    );
+  // Filtros e interceptores
+  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalInterceptors(
+    new LoggingInterceptor(),
+    new TransformInterceptor(),
+  );
 
-    // Filtros e interceptores
-    app.useGlobalFilters(new HttpExceptionFilter());
-    app.useGlobalInterceptors(
-      new LoggingInterceptor(),
-      new TransformInterceptor(),
-    );
+  // CORS para producción
+  const allowedOrigins = [
+    'http://localhost:4200',
+    'https://atom-343c0.web.app',
+    'https://atom-343c0.firebaseapp.com',
+  ];
 
-    // CORS para producción
-    const allowedOrigins = [
-      'http://localhost:4200',
-      'https://atom-343c0.web.app',
-      'https://atom-343c0.firebaseapp.com',
-    ];
+  app.enableCors({
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  });
 
-    app.enableCors({
-      origin: (
-        origin: string | undefined,
-        callback: (err: Error | null, allow?: boolean) => void,
-      ) => {
-        if (!origin || allowedOrigins.includes(origin)) {
-          callback(null, true);
-        } else {
-          callback(new Error('Not allowed by CORS'));
-        }
-      },
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id'],
-    });
+  // Inicializar la aplicación
+  await app.init();
 
-    // Inicializar la aplicación
-    await app.init();
+  cachedApp = app;
+  logger.log('🚀 NestJS app initialized');
+  logger.log(`📡 CORS enabled for: ${allowedOrigins.join(', ')}`);
 
-    isAppInitialized = true;
-    logger.log('🚀 NestJS app initialized successfully');
-    logger.log(`📡 CORS enabled for: ${allowedOrigins.join(', ')}`);
-  } catch (error) {
-    logger.error('❌ Failed to initialize NestJS app', error);
-    throw error;
-  }
+  return app;
 }
 
 /**
@@ -91,6 +82,15 @@ async function bootstrap(): Promise<void> {
  * URL de producción: https://us-central1-atom-343c0.cloudfunctions.net/api
  */
 export const api = functions.https.onRequest(async (req, res) => {
-  await bootstrap();
-  expressApp(req, res);
+  try {
+    await createNestApp();
+    server(req, res);
+  } catch (error) {
+    logger.error('Error handling request:', error);
+    res.status(500).json({
+      statusCode: 500,
+      message: 'Internal server error',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
 });
