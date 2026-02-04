@@ -1,7 +1,6 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { ExpressAdapter } from '@nestjs/platform-express';
-import express from 'express';
+import { INestApplication } from '@nestjs/common';
 import * as functions from 'firebase-functions';
 import { AppModule } from './app.module';
 import {
@@ -18,16 +17,14 @@ const allowedOrigins = [
   'https://atom-343c0.firebaseapp.com',
 ];
 
-const expressApp = express();
-let isBootstrapped = false;
+let cachedServer: any = null;
 
-async function bootstrap(): Promise<void> {
-  if (isBootstrapped) {
-    return;
+async function bootstrap(): Promise<any> {
+  if (cachedServer) {
+    return cachedServer;
   }
 
-  const adapter = new ExpressAdapter(expressApp);
-  const app = await NestFactory.create(AppModule, adapter, {
+  const app = await NestFactory.create(AppModule, {
     logger: ['error', 'warn', 'log'],
   });
 
@@ -55,13 +52,19 @@ async function bootstrap(): Promise<void> {
     allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id'],
   });
 
-  // NO llamar app.init() - Se inicializa automáticamente en el primer request
-  isBootstrapped = true;
+  // CLAVE: Inicializar la app para registrar las rutas
+  await app.init();
+  
+  // Obtener el servidor HTTP subyacente
+  cachedServer = app.getHttpServer();
+  
   logger.log('🚀 NestJS app ready');
   logger.log(`📡 CORS enabled for: ${allowedOrigins.join(', ')}`);
+
+  return cachedServer;
 }
 
 export const api = functions.https.onRequest(async (req, res) => {
-  await bootstrap();
-  expressApp(req, res);
+  const server = await bootstrap();
+  server.emit('request', req, res);
 });
