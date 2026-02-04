@@ -97,12 +97,14 @@ jobs:
       - name: Create .env file
         working-directory: backend
         run: |
-          echo "FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> .env
-          echo "FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}" >> .env
-          echo "FIREBASE_PRIVATE_KEY=${{ secrets.FIREBASE_PRIVATE_KEY }}" >> .env
-          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
-          echo "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" >> .env
-          echo "NODE_ENV=production" >> .env
+          cat > .env << 'EOF'
+          FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY="${{ secrets.FIREBASE_PRIVATE_KEY }}"
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+          NODE_ENV=production
+          EOF
       
       - name: Deploy to Firebase Functions
         working-directory: backend

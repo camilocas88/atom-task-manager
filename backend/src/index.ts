@@ -69,9 +69,7 @@ const createNestServer = async (expressInstance: express.Application) => {
     allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id'],
   });
 
-  await app.init();
-
-  logger.log('🚀 NestJS app initialized for Firebase Functions');
+  logger.log('🚀 NestJS app configured for Firebase Functions');
   logger.log(
     `📡 CORS enabled for: ${process.env.FRONTEND_URL || 'all origins'}`,
   );
@@ -79,10 +77,10 @@ const createNestServer = async (expressInstance: express.Application) => {
   return app;
 };
 
-// Inicializar la app
+// Inicializar la app (sin llamar a init() para evitar error de app.router deprecated)
 createNestServer(server)
   .then(() => console.log('✅ Nest Ready for Firebase Functions'))
-  .catch((err) => console.error('❌ Nest broken', err));
+  .catch((err) => console.error('❌ Nest initialization error', err));
 
 /**
  * Export como Firebase Function
